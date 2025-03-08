@@ -1,12 +1,12 @@
 name: Sonar build
 on:
   push:
-    branches: [ master ]
+    branches: [ actions ]
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
   pull_request_target:
-    branches: [ master ]
+    branches: [ actions ]
     types: [ labeled ]
   merge_group:
     types: [ checks_requested ]
@@ -15,18 +15,18 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    if: ${{ (github.repository == 'savushkin-r-d/ptusa_main') && ( (github.event_name == 'push') || (github.event_name == 'schedule') || (github.event_name == 'merge_group') || ((github.event_name == 'pull_request_target') && (contains( github.event.pull_request.labels.*.name, 'safe to test' )))) }}
+    if: ${{ (github.repository == 'dzibukalexander/ptusa_main') && ( (github.event_name == 'push') || (github.event_name == 'schedule') || (github.event_name == 'merge_group') || ((github.event_name == 'pull_request_target') && (contains( github.event.pull_request.labels.*.name, 'safe to test' )))) }}
     env:
-      # To see list of versions https://binaries.sonarsource.com/?prefix=Distribution/sonar-scanner-cli/
       SONAR_SCANNER_VERSION: 7.0.0.4796
       SONAR_SERVER_URL: "https://sonarcloud.io"
-      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
+      BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
           submodules: 'recursive'
           ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Download and set up sonar-scanner
         env:
           SONAR_SCANNER_DOWNLOAD_URL: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${{ env.SONAR_SCANNER_VERSION }}-linux-x64.zip
@@ -35,7 +35,7 @@ jobs:
           curl -sSLo $HOME/.sonar/sonar-scanner.zip ${{ env.SONAR_SCANNER_DOWNLOAD_URL }} 
           unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
           echo "$HOME/.sonar/sonar-scanner-${{ env.SONAR_SCANNER_VERSION }}-linux-x64/bin" >> $GITHUB_PATH
-          ls "$HOME/.sonar/sonar-scanner-7.0.0.4796-linux-x64/bin" -all
+
       - name: Download and set up build-wrapper
         env:
           BUILD_WRAPPER_DOWNLOAD_URL: ${{ env.SONAR_SERVER_URL }}/static/cpp/build-wrapper-linux-x86.zip
@@ -43,6 +43,7 @@ jobs:
           curl -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip ${{ env.BUILD_WRAPPER_DOWNLOAD_URL }}
           unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
           echo "$HOME/.sonar/build-wrapper-linux-x86" >> $GITHUB_PATH
+
       - name: Run build-wrapper
         run: |
           mkdir build
@@ -55,7 +56,6 @@ jobs:
           include(ProcessorCount)
           ProcessorCount(N)
           set(ENV{CTEST_OUTPUT_ON_FAILURE} "ON")          
-
           execute_process(
             COMMAND ctest -j ${N}
             WORKING_DIRECTORY build
@@ -71,7 +71,6 @@ jobs:
             message(FATAL_ERROR "Running tests failed!")
           endif()
 
-      # Run gcov to translate `.gcda` files into `.gcov` readable by humans and SonarCloud
       - name: Run gcov
         run: |
           mkdir coverage-dir
@@ -85,4 +84,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          sonar-scanner --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.compile-commands="${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json" --define sonar.pullrequest.key=${{ github.event.pull_request.number }} --define sonar.scm.revision=${{ github.event.pull_request.head.sha }} --define sonar.cfamily.gcov.reportsPath="coverage-dir"
+          sonar-scanner \
+            --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" \
+            --define sonar.cfamily.compile-commands="${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json" \
+            --define sonar.pullrequest.key=${{ github.event.pull_request.number }} \
+            --define sonar.scm.revision=${{ github.event.pull_request.head.sha }} \
+            --define sonar.cfamily.gcov.reportsPath="coverage-dir"
