@@ -274,10 +274,15 @@ TEST( toLuapp, STUB )
 
     ASSERT_EQ( 0, luaL_dostring( L, "active = dev:is_active()" ) );
 
-    lua_getfield( L, LUA_GLOBALSINDEX, "active" );
-    auto active = tolua_toboolean( L, -1, 0 );
-    lua_pop( L, 1 );
-    ASSERT_FALSE(active);
+    lua_getfield(L, LUA_GLOBALSINDEX, "active");
+    if (lua_isboolean(L, -1)) {
+        auto active = tolua_toboolean(L, -1, 0);
+        lua_pop(L, 1);
+        ASSERT_FALSE(active);
+    }
+    else {
+        FAIL() << "Expected boolean value on the stack";
+    }
 
 
     lua_close( L );
