@@ -12,19 +12,15 @@
 name: "CodeQL"
 
 on:
-  push:
-    branches: ["*"]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: ["*"]
     paths-ignore:
       - '**/*.md'
-  schedule:
-    - cron: '0 9 * * 1'
 
 jobs:
   analyze:
-    if: github.repository == 'savushkin-r-d/ptusa_main'
+    if: github.repository == 'dzibukalexander/ptusa_main'
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
