@@ -1,12 +1,12 @@
 name: Sonar build
 on:
   push:
-    branches: [ actions ]
+    branches: [ master, actions ]
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
   pull_request_target:
-    branches: [ actions ]
+    branches: [ master, actions ]
     types: [ labeled ]
   merge_group:
     types: [ checks_requested ]
